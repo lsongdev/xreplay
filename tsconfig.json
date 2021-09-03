@@ -1,0 +1,49 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "outDir": "dist",
+        "module": "esnext",
+        "target": "ES2015",
+        "moduleResolution": "node",
+        "allowJs": false,
+        "noUnusedLocals": false,
+        "strictNullChecks": true,
+        "noImplicitAny": true,
+        "noImplicitThis": true,
+        "experimentalDecorators": true,
+        "resolveJsonModule": true,
+        "esModuleInterop": true,
+        "removeComments": true,
+        "declaration": true,
+        "jsx": "preserve",
+        "skipLibCheck": true,
+        "lib": [
+            "esnext",
+            "dom",
+            "dom.iterable"
+        ],
+        "types": [
+            "node",
+            "jest",
+        ],
+        "paths": {
+            "@timecat/*": [
+                "packages/*/src"
+            ],
+            "timecat": [
+                "packages/timecat/src"
+            ],
+            "pkg": [
+                "./package.json"
+            ],
+            "*": [
+                "types/*"
+            ]
+        }
+    },
+    "include": [
+        "packages/**/*",
+        "types/**/*",
+        "package.json"
+    ]
+}

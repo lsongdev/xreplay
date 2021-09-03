@@ -1,0 +1,18 @@
+{
+    "private": false,
+    "name": "@timecat/virtual-dom",
+    "version": "1.2.0-alpha.24",
+    "description": "@timecat/virtual-dom",
+    "main": "index.js",
+    "module": "dist/virtual-dom.esm.js",
+    "types": "dist/virtual-dom.d.ts",
+    "unpkg": "dist/virtual-dom.global.prod.js",
+    "jsdelivr": "dist/virtual-dom.global.prod.js",
+    "scripts": {},
+    "dependencies": {
+        "@timecat/utils": "1.2.0-alpha.24",
+        "@timecat/share": "1.2.0-alpha.24"
+    },
+    "author": "oct16",
+    "license": "GPL-3.0-or-later"
+}

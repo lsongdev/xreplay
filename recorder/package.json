@@ -1,0 +1,35 @@
+{
+    "name": "@timecat/recorder",
+    "version": "1.2.0-alpha.24",
+    "description": "@timecat/recorder",
+    "main": "index.js",
+    "module": "dist/recorder.esm.js",
+    "types": "dist/recorder.d.ts",
+    "unpkg": "dist/recorder.global.prod.js",
+    "jsdelivr": "dist/recorder.global.prod.js",
+    "files": [
+        "index.js",
+        "dist"
+    ],
+    "keywords": [
+        "timecat",
+        "recorder",
+        "player"
+    ],
+    "scripts": {},
+    "buildOptions": {
+        "name": "Recorder",
+        "formats": [
+            "global",
+            "esm",
+            "cjs"
+        ]
+    },
+    "dependencies": {
+        "@timecat/utils": "1.2.0-alpha.24",
+        "@timecat/virtual-dom": "1.2.0-alpha.24",
+        "@timecat/share": "1.2.0-alpha.24"
+    },
+    "author": "oct16",
+    "license": "GPL-3.0-or-later"
+}
