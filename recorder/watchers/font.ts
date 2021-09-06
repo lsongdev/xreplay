@@ -1,0 +1,57 @@
+
+/**
+ *
+ * Reference and more info:
+ * https://github.com/Microsoft/TypeScript/issues/30984
+ * https://developer.mozilla.org/en-US/docs/Web/API/FontFace/FontFace
+ *
+ */
+import { FontRecord, RecordType } from '../../types'
+import { Watcher } from '../watcher'
+
+export class FontWatcher extends Watcher<FontRecord> {
+    protected init() {
+        if (this.recordOptions.font) {
+            this.interceptAddFont()
+        }
+    }
+
+    private interceptAddFont() {
+        const original = window.FontFace
+        const self = this
+        function FontFace(family: string, source: string | ArrayBuffer) {
+            // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Typed_arrays
+            // https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
+            function ab2str(buffer: ArrayBuffer) {
+                const buf = new Uint16Array(buffer)
+                const len = buf.byteLength
+
+                let gap = Math.pow(2, 16) - 1
+                let res = ''
+
+                for (let i = 0; i < len; i += gap) {
+                    if (i + gap > len) {
+                        gap = len - i
+                    }
+
+                    res += String.fromCharCode.apply(null, buf.subarray(i, i + gap))
+                }
+
+                return res
+            }
+
+            const font = new original(family, source)
+            self.emitData(RecordType.FONT, {
+                family,
+                source: typeof source === 'string' ? source : ab2str(source)
+            })
+            document.fonts.add(font)
+        }
+
+        window.FontFace = (FontFace as unknown) as FontFace
+
+        this.uninstall(() => {
+            window.FontFace = original
+        })
+    }
+}

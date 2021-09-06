@@ -1,0 +1,118 @@
+
+import { ContainerComponent } from './container'
+import { ReplayInternalOptions } from '../../types'
+import { ConnectProps, Component, html, Store, PlayerReducerTypes, parseHtmlStr, IComponent } from '../utils'
+
+@Component(
+    'player-keyboard',
+    html`<div class="player-keyboard">
+        <button class="play-or-pause" type="button" speed="1">▲</button>
+    </div>`
+)
+export class KeyboardComponent implements IComponent {
+    parent: HTMLElement
+    target: HTMLElement
+    c: ContainerComponent
+    options: ReplayInternalOptions
+    controller: HTMLElement
+    playOrPauseBtn: HTMLButtonElement
+
+    constructor(options: ReplayInternalOptions, container: ContainerComponent) {
+        this.options = options
+        this.c = container
+        this.init()
+    }
+
+    @ConnectProps(state => ({
+        speed: state.player.speed
+    }))
+    private watchPlayerSpeed(state?: { speed: number }) {
+        if (state) {
+            this.paly(state.speed)
+            this.setSpeed(state.speed)
+        }
+    }
+
+    private init() {
+        this.controller = this.c.container.querySelector('.player-keyboard') as HTMLElement
+        this.playOrPauseBtn = this.c.container.querySelector('.play-or-pause') as HTMLButtonElement
+
+        this.createFastForwards(this.options.fastForward)
+
+        const controllerHandler = (e: MouseEvent & { target: HTMLElement & { type: string } }) => {
+            if (e.target && e.target.type === 'button') {
+                const speed = Number((e.target as HTMLElement).getAttribute('speed'))
+                this.dispatchPlay(speed)
+            }
+        }
+
+        this.controller.addEventListener('click', controllerHandler, false)
+        this.options.destroyStore.add(() => {
+            this.controller.removeEventListener('click', controllerHandler, false)
+        })
+
+        this.watchPlayerSpeed()
+        this.detectWindowIsActive()
+    }
+
+    createFastForwards(speeds: number[]) {
+        speeds = Array.from(new Set([1].concat(speeds)))
+        if (speeds) {
+            const htmlStr = speeds.reduce(
+                (s, speed) => s + html`<button type="button" class="speed" speed="${speed}">${speed}x</button>`,
+                ''
+            )
+
+            this.controller.append(...parseHtmlStr(htmlStr))
+        }
+    }
+
+    private dispatchPlay(speed = 0) {
+        Store.dispatch({
+            type: PlayerReducerTypes.SPEED,
+            data: {
+                speed
+            }
+        })
+    }
+
+    private detectWindowIsActive() {
+        const handler = () => {
+            if (document.visibilityState === 'hidden') {
+                this.dispatchPlay(0)
+            }
+        }
+        document.addEventListener('visibilitychange', handler, false)
+        this.options.destroyStore.add(() => {
+            document.removeEventListener('visibilitychange', handler, false)
+        })
+    }
+
+    private paly(speed: number) {
+        if (speed !== 0) {
+            this.playOrPauseBtn.innerText = '〓'
+            this.playOrPauseBtn.setAttribute('style', 'letter-spacing: 1px;font-weight: bold;')
+            this.playOrPauseBtn.removeAttribute('speed')
+        } else {
+            this.playOrPauseBtn.innerText = '▲'
+            this.playOrPauseBtn.removeAttribute('style')
+            this.playOrPauseBtn.setAttribute('speed', '1')
+        }
+    }
+
+    private setSpeed(speed: number) {
+        const speedNodes = this.c.container.querySelectorAll('.speed') as NodeListOf<HTMLButtonElement>
+        ;[...speedNodes].forEach(node => {
+            node.removeAttribute('disabled')
+        })
+
+        const index = getBtnIndex(speed)
+
+        function getBtnIndex(speed: number) {
+            return [...speedNodes].findIndex(node => node.getAttribute('speed') === speed.toString())
+        }
+        if (index > -1) {
+            speedNodes[index].setAttribute('disabled', '')
+        }
+    }
+}

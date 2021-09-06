@@ -23,16 +23,9 @@
             "dom.iterable"
         ],
         "types": [
-            "node",
-            "jest",
+            "node"
         ],
         "paths": {
-            "@timecat/*": [
-                "packages/*/src"
-            ],
-            "timecat": [
-                "packages/timecat/src"
-            ],
             "pkg": [
                 "./package.json"
             ],
