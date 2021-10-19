@@ -110,7 +110,7 @@ export class DOMWatcher extends Watcher<DOMRecord> {
     const addedNodes: UpdateNodeData[] = []
     const addedVNodesMap: Map<number, VNode> = new Map()
 
-    addNodesSet.forEach((node: Element) => {
+    addNodesSet.forEach(node => {
       const parentId = this.getNodeId(node.parentNode!)
       const id = nodeStore.getNodeId(node)
       const vn: VNode | VSNode = id ? getVNode(node, { id }) : createFlatVNode(node as Element)
@@ -247,8 +247,8 @@ export class DOMWatcher extends Watcher<DOMRecord> {
   }
 
   private rewriteAddedSource(addedNodes: UpdateNodeData<number | VSNode | VNode>[], time: number) {
-    const { G_RECORD_OPTIONS: options } = window
-    const configs = options?.rewriteResource || []
+    const { options } = this;
+    const configs = (options as any)?.rewriteResource || []
     if (!configs?.length) {
       return
     }

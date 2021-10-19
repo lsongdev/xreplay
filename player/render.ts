@@ -71,17 +71,6 @@ export async function renderAll(
             renderLocation(data as LocationRecordData)
             break
         }
-        // case RecordType.CANVAS_SNAPSHOT: {
-        //     renderCanvasSnapshot(data as CanvasSnapshotRecordData)
-        //     break
-        // }
-        // case RecordType.CANVAS: {
-        //     if (!isJumping && speed === 1) {
-        //         await actionDelay()
-        //     }
-        //     renderCanvas2D(data as CanvasRecordData)
-        //     break
-        // }
         case RecordType.FONT: {
             renderFont.call(this, data as CanvasRecordData)
             break
@@ -90,10 +79,6 @@ export async function renderAll(
             renderPatch(data as PreFetchRecordData)
             break
         }
-        // case RecordType.WEBGL: {
-        //     renderWebGL(data as WebGLRecordData)
-        //     break
-        // }
         default: {
             break
         }

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <script type="module">
+    import { Recorder } from '../dist/xreplay-recorder.esm.js';
+    import { openDB, deleteDB, wrap, unwrap } from 'https://unpkg.com/idb?module';
+
+    (async () => {
+      await deleteDB('xreplay');
+      const db = await openDB('xreplay', 2, {
+        upgrade(db) {
+          const store = db.createObjectStore('records', {
+            keyPath: 'id',
+            autoIncrement: true,
+          });
+        }
+      });
+      const recorder = new Recorder({
+        disableWatchers: [
+          // 'Snapshot',
+          'LocationWatcher',
+          // 'DOMWatcher',
+          'FormElementWatcher',
+          'MouseWatcher',
+          'ScrollWatcher',
+          'WindowWatcher',
+          'FontWatcher',
+          'TerminateWatcher'
+        ]
+      });
+      recorder.onData(async record => {
+        await db.add('records', record);
+      });
+    })();
+
+
+    document.addEventListener('click', () => {
+      const li = document.createElement('li');
+      li.textContent = new Date;
+      list.appendChild(li);
+    })
+  </script>
+</head>
+
+<body>
+  <a href="./index.html">Back</a>
+  <div>
+    <ul id="list" ></ul>
+  </div>
+</body>
+
+</html>

@@ -1208,7 +1208,7 @@ var xreplay = (function (exports) {
             });
             const addedNodes = [];
             const addedVNodesMap = new Map();
-            addNodesSet.forEach((node) => {
+            addNodesSet.forEach(node => {
                 const parentId = this.getNodeId(node.parentNode);
                 const id = nodeStore.getNodeId(node);
                 const vn = id ? getVNode(node, { id }) : createFlatVNode(node);
@@ -1326,8 +1326,9 @@ var xreplay = (function (exports) {
             }
         }
         rewriteAddedSource(addedNodes, time) {
-            const { G_RECORD_OPTIONS: options } = window;
-            const configs = (options === null || options === void 0 ? void 0 : options.rewriteResource) || [];
+            var _a;
+            const { options } = this;
+            const configs = ((_a = options) === null || _a === void 0 ? void 0 : _a.rewriteResource) || [];
             if (!(configs === null || configs === void 0 ? void 0 : configs.length)) {
                 return;
             }
@@ -1925,7 +1926,7 @@ var xreplay = (function (exports) {
         }
         getOffsetPosition(event, context) {
             var _a;
-            const { mode } = context.G_RECORD_OPTIONS;
+            const { mode } = this.options;
             const { view, target, x, y, offsetX, offsetY } = event;
             if (view === context) {
                 const doc = target.ownerDocument;
@@ -2224,6 +2225,18 @@ var xreplay = (function (exports) {
         }
     }
 
+    function getHeadData() {
+        return {
+            href: location.href,
+            title: document.title,
+            relatedId: getRandomCode(),
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            beginTime: getTime(),
+            version: pkg.version
+        };
+    }
+
     class Snapshot extends Watcher {
         init() {
             const snapshotData = this.DOMSnapshotData(this.options.context || window);
@@ -2240,8 +2253,8 @@ var xreplay = (function (exports) {
             const href = () => context.location.href;
             const width = () => context.innerWidth;
             const height = () => context.innerHeight;
-            const scrollTop = () => context.pageYOffset;
-            const scrollLeft = () => context.pageXOffset;
+            const scrollTop = () => context.screenY;
+            const scrollLeft = () => context.screenX;
             const [base] = document.getElementsByTagName('base');
             const getFrameElement = () => context.frameElement;
             const frameElement = getFrameElement();
@@ -2258,8 +2271,7 @@ var xreplay = (function (exports) {
             };
         }
         checkNodesData({ vNode }, time) {
-            const { G_RECORD_OPTIONS: options } = window;
-            const configs = (options === null || options === void 0 ? void 0 : options.rewriteResource) || [];
+            const { rewriteResource: configs = [] } = this.options;
             if (!(configs === null || configs === void 0 ? void 0 : configs.length)) {
                 return;
             }
@@ -2277,18 +2289,6 @@ var xreplay = (function (exports) {
                 this.emitData(RecordType.PATCH, data, time + 1);
             });
         }
-    }
-
-    function getHeadData() {
-        return {
-            href: location.href,
-            title: document.title,
-            relatedId: getRandomCode(),
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-            beginTime: getTime(),
-            version: pkg.version
-        };
     }
 
     function getAugmentedNamespace(n) {
@@ -6470,6 +6470,7 @@ var xreplay = (function (exports) {
             opts.rootContext = opts.rootContext || opts.context;
             this.options = opts;
             this.watchers = this.getWatchers();
+            console.log(this.watchers);
             this.init();
         }
         initOptions(options) {
@@ -6539,7 +6540,7 @@ var xreplay = (function (exports) {
         record(options) {
             if (this.status === exports.RecorderStatus.PAUSE) {
                 const opts = Object.assign(Object.assign({}, RecorderModule.defaultRecordOpts), options);
-                this.startRecord((opts.context.G_RECORD_OPTIONS = opts));
+                this.startRecord(opts);
                 return;
             }
         }

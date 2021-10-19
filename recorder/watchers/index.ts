@@ -13,7 +13,7 @@ export const baseWatchers = {
     FormElementWatcher,
     MouseWatcher,
     ScrollWatcher
-}
+};
 
 export const watchers = {
     LocationWatcher,
@@ -21,4 +21,4 @@ export const watchers = {
     WindowWatcher,
     FontWatcher,
     TerminateWatcher
-}
+};

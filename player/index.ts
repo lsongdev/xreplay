@@ -76,40 +76,33 @@ export class PlayerModule {
     this.destroyStore.add(() => Store.unsubscribe())
 
     const records = await this.getRecords(opts)
-    window.G_REPLAY_RECORDS = records
-
     const packs = getPacks(records)
     const firstData = transToReplayData(packs[0])
+    // console.log(firstData);
     const { audio } = firstData
     Store.dispatch({
       type: ReplayDataReducerTypes.UPDATE_DATA,
       data: { records, packs, currentData: firstData }
     })
 
-    const hasAudio = audio && (audio.src || audio.wavStrList.length || audio.pcmStrList.length)
+    const hasAudio = audio && (audio.src || audio.wavStrList.length || audio.pcmStrList.length);
 
     this.c = new ContainerComponent(opts)
     const container = this.c.container
-    showStartMask(this.c)
-      ; (this.fmp = new FMP()).ready(async () => {
-        if (hasAudio) {
-          await waitStart(container)
-        }
-
-        removeStartPage(container)
-
-        if (records.length) {
-          if (opts.autoplay || hasAudio) {
-            if (opts.autoplay) {
-              Store.dispatch({
-                type: PlayerReducerTypes.SPEED,
-                data: { speed: 1 }
-              })
-            }
-          }
-        }
-      })
-
+    showStartMask(this.c);
+    (this.fmp = new FMP()).ready(async () => {
+      if (hasAudio) {
+        await waitStart(container)
+      }
+      removeStartPage(container)
+      if (records.length && opts.autoplay) {
+        Store.dispatch({
+          type: PlayerReducerTypes.SPEED,
+          data: { speed: 1 }
+        })
+      }
+    });
+    // console.log('packs', packs);
     if (packs.length) {
       this.calcProgress()
     }

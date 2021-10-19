@@ -93,7 +93,7 @@ export class MouseWatcher extends Watcher<MouseRecord> {
   }
 
   private getOffsetPosition(event: MouseEvent, context: Window) {
-    const { mode } = context.G_RECORD_OPTIONS
+    const { mode } = this.options as any;
 
     const { view, target, x, y, offsetX, offsetY } = event
 

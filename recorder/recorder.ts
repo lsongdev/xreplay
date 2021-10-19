@@ -3,11 +3,11 @@ import { watchers, baseWatchers } from './watchers'
 import { AudioWatcher } from './audio'
 import { RecordData, RecordType } from '../types'
 import { logError, nodeStore, getTime, tempEmptyFn, tempEmptyPromise, delay } from '../utils'
-import { Snapshot } from './snapshot'
 import { getHeadData } from './head'
+import { Watcher } from './watcher'
+import { Snapshot } from './watchers/snapshot'
 import { LocationWatcher } from './watchers/location'
 import { Pluginable } from './pluginable'
-import { Watcher } from './watcher'
 import { VideoWatcher } from './watchers/video'
 import { RecorderMiddleware, RecorderStatus, RecordInternalOptions, RecordOptions } from './types'
 
@@ -22,7 +22,7 @@ export class Recorder {
   public use: RecorderModule['use'] = tempEmptyFn
   constructor(options?: RecordOptions) {
     const recorder = new RecorderModule(options)
-    Object.keys(this).forEach((key: keyof Recorder) => {
+    Object.keys(this).forEach((key: keyof RecorderModule) => {
       Object.defineProperty(this, key, {
         get() {
           return typeof recorder[key] === 'function'
@@ -64,6 +64,7 @@ export class RecorderModule extends Pluginable {
     opts.rootContext = opts.rootContext || opts.context
     this.options = opts
     this.watchers = this.getWatchers() as typeof Watcher[]
+    console.log(this.watchers)
     this.init()
   }
 
@@ -126,7 +127,6 @@ export class RecorderModule extends Pluginable {
     if (video) {
       watchersList.push(VideoWatcher as typeof Watcher)
     }
-
     return watchersList.filter(watcher => {
       return !~disableWatchers.indexOf(watcher.name as keyof typeof watchers)
     })
@@ -135,7 +135,7 @@ export class RecorderModule extends Pluginable {
   private record(options: RecordOptions | RecordInternalOptions): void {
     if (this.status === RecorderStatus.PAUSE) {
       const opts = { ...RecorderModule.defaultRecordOpts, ...options } as RecordInternalOptions
-      this.startRecord((opts.context.G_RECORD_OPTIONS = opts))
+      this.startRecord(opts);
       return
     }
   }
@@ -146,9 +146,6 @@ export class RecorderModule extends Pluginable {
 
     const isSameCtx = options.context === this.options.rootContext
     if (isSameCtx) {
-      // if (!options.keep) {
-      //   this.db.clear()
-      // }
     } else {
       // for iframe watchers
       activeWatchers = [Snapshot, ...Object.values(baseWatchers)] as typeof Watcher[]
@@ -170,9 +167,6 @@ export class RecorderModule extends Pluginable {
             const record = emitTasks.shift()!
             await delay(0)
             if (this.status === RecorderStatus.RUNNING) {
-              // if (write) {
-              //   this.db.add(record)
-              // }
               const middleware = [...rootMiddleware, ...this.middleware]
               await this.connectCompose(middleware)(record)
               this.hooks.emit.call(record)
