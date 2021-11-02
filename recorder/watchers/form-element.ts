@@ -1,136 +1,58 @@
 
-import { getStrDiffPatches } from '../../utils'
-import { WatcherArgs, FormElementEvent, RecordType, FormElementRecord } from '../../types'
 import { Watcher } from '../watcher'
 
-export class FormElementWatcher extends Watcher<FormElementRecord> {
-  protected init() {
-    this.listenInputs(this.options)
-    this.hijackInputs(this.options)
+enum eventTypes {
+  'input' = 'input',
+  'change' = 'change',
+  'focus' = 'focus',
+  'blur' = 'blur'
+}
+
+const createHijacking = (context: any, handleEvent: any) => {
+  const eventListenerOptions = { once: false, passive: true, capture: true };
+  function fn(this: Window, e: Event) {
+    const eventType = e.type;
+    handleEvent(e.target, eventType);
+  };
+  const arr: any[] = [];
+  for (const type of Object.values(eventTypes)) {
+    context.addEventListener(type, fn, eventListenerOptions);
+    arr.push(() => context.removeEventListener(type, fn, eventListenerOptions));
   }
-
-  private listenInputs(options: WatcherArgs<FormElementRecord>) {
-    const { context } = options
-
-    enum eventTypes {
-      'input' = 'input',
-      'change' = 'change',
-      'focus' = 'focus',
-      'blur' = 'blur'
-    }
-
-    const eventListenerOptions = { once: false, passive: true, capture: true }
-
-    Object.values(eventTypes)
-      .map(type => (fn: (e: InputEvent) => void) => {
-        context.addEventListener(type, fn, eventListenerOptions)
-        this.uninstall(() => context.removeEventListener(type, fn, eventListenerOptions))
-      })
-      .forEach(call => call(handleFn.bind(this)))
-
-    function handleFn(this: FormElementWatcher, e: InputEvent) {
-      const eventType = e.type
-      let data!: FormElementRecord['data']
-      switch (eventType) {
-        case eventTypes.input:
-        case eventTypes.change:
-          const target = (e.target as unknown) as HTMLInputElement
-          const inputType = target.getAttribute('type') || 'text'
-
-          let key = 'value'
-          const value: any = target.value || ''
-          let newValue: any = ''
-          const patches: ReturnType<typeof getStrDiffPatches> = []
-
-          if (inputType === 'checkbox' || inputType === 'radio') {
-            if (eventType === 'input') {
-              return
-            }
-            key = 'checked'
-            newValue = target.checked
-          } else {
-            if (value === target.oldValue) {
-              return
-            }
-            if (value.length <= 20 || !target.oldValue) {
-              newValue = value
-            } else {
-              patches.push(...getStrDiffPatches(target.oldValue, value))
-            }
-            target.oldValue = value
-          }
-
-          data = {
-            type: eventType === 'input' ? FormElementEvent.INPUT : FormElementEvent.CHANGE,
-            id: this.getNodeId(e.target as Node)!,
-            key,
-            value: !patches.length ? newValue : null,
-            patches
-          }
-          break
-        case eventTypes.focus:
-          data = {
-            type: FormElementEvent.FOCUS,
-            id: this.getNodeId(e.target as Node)!
-          }
-          break
-        case eventTypes.blur:
-          data = {
-            type: FormElementEvent.BLUR,
-            id: this.getNodeId(e.target as Node)!
-          }
-          break
-        default:
-          break
+  const hijacking = (key: string, target: HTMLElement) => {
+    const descriptor: any = Object.getOwnPropertyDescriptor(target, key);
+    Object.defineProperty(target, key, {
+      set(value: string | boolean) {
+        setTimeout(() => handleEvent(this, key, value));
+        if (descriptor && descriptor.set) {
+          descriptor.set.call(this, value);
+        }
       }
-
-      this.emitData(RecordType.FORM_EL, data)
-    }
+    });
+    arr.push(() => Object.defineProperty(target, key, descriptor));
   }
-
-  private hijackInputs(options: WatcherArgs<FormElementRecord>) {
-    const { context } = options
-    const self = this
-    function handleEvent(this: HTMLElement, key: string, value: string) {
-      const data = {
-        type: FormElementEvent.PROP,
-        id: self.getNodeId(this)!,
-        key,
-        value
-      }
-
-      self.emitData(RecordType.FORM_EL, data)
-    }
-
-    const hijacking = (key: string, target: HTMLElement) => {
-      const original = context.Object.getOwnPropertyDescriptor(target, key)
-      context.Object.defineProperty(target, key, {
-        set: function (value: string | boolean) {
-          setTimeout(() => {
-            handleEvent.call(this, key, value)
-          })
-          if (original && original.set) {
-            original.set.call(this, value)
-          }
-        }
-      })
-
-      this.uninstall(() => {
-        if (original) {
-          context.Object.defineProperty(target, key, original)
-        }
-      })
-    }
-
+  const bind = () => {
     new Map<HTMLElement, string>([
       [context.HTMLSelectElement.prototype, 'value'],
       [context.HTMLTextAreaElement.prototype, 'value'],
       [context.HTMLOptionElement.prototype, 'selected']
-    ]).forEach(hijacking.bind(this))
+    ]).forEach((target, key) => hijacking(target, key));
 
     new Map<string, HTMLElement>([
       ['value', context.HTMLInputElement.prototype],
       ['checked', context.HTMLInputElement.prototype]
-    ]).forEach((target, key) => hijacking(key, target))
+    ]).forEach((target, key) => hijacking(key, target));
+  };
+  return bind();
+};
+
+function hijackInputs(context: any) {
+  const hijacking = createHijacking(context, (el: HTMLElement, key: string, value: any) => {
+    console.log(el, key, value);
+  });
+}
+export class FormElementWatcher extends Watcher {
+  install({ context }: any) {
+    hijackInputs(context);
   }
 }

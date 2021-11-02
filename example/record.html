@@ -26,7 +26,7 @@
           // 'Snapshot',
           'LocationWatcher',
           // 'DOMWatcher',
-          'FormElementWatcher',
+          // 'FormElementWatcher',
           'MouseWatcher',
           'ScrollWatcher',
           'WindowWatcher',
@@ -34,9 +34,12 @@
           'TerminateWatcher'
         ]
       });
-      recorder.onData(async record => {
-        await db.add('records', record);
+      recorder.on('record', async record => {
+        console.log(record);
       });
+
+      recorder.start();
+
     })();
 
 
@@ -51,6 +54,14 @@
 <body>
   <a href="./index.html">Back</a>
   <div>
+    <form action="">
+      <input type="text">
+      <input type="checkbox" name="" id="">
+      <input type="checkbox" name="" id="">
+      <input type="radio" name="" id="">
+      <input type="radio" name="" id="">
+      <input type="button" value="button">
+    </form>
     <ul id="list" ></ul>
   </div>
 </body>
