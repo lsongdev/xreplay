@@ -24,20 +24,16 @@
       const recorder = new Recorder({
         disableWatchers: [
           // 'Snapshot',
-          'LocationWatcher',
+          // 'LocationWatcher',
           // 'DOMWatcher',
-          // 'FormElementWatcher',
+          // 'FormWatcher',
           'MouseWatcher',
-          'ScrollWatcher',
-          'WindowWatcher',
-          'FontWatcher',
-          'TerminateWatcher'
+          // 'ScrollWatcher',
         ]
       });
       recorder.on('record', async record => {
         console.log(record);
       });
-
       recorder.start();
 
     })();
@@ -55,14 +51,14 @@
   <a href="./index.html">Back</a>
   <div>
     <form action="">
-      <input type="text">
-      <input type="checkbox" name="" id="">
-      <input type="checkbox" name="" id="">
+      <input type="text" id="txt">
+      <input type="checkbox" name="cbx" class="cbx">
+      <input type="checkbox" name="cbx" id="" class="cbx">
       <input type="radio" name="" id="">
       <input type="radio" name="" id="">
       <input type="button" value="button">
     </form>
-    <ul id="list" ></ul>
+    <ul id="list"></ul>
   </div>
 </body>
 

@@ -6,7 +6,8 @@ export class EventEmitter {
     return this;
   }
   emit(type: string, data: any) {
-    for (const fn of this.listeners[type]) {
+    console.log(type, data);
+    for (const fn of this.listeners[type] || []) {
       fn.call(this, data);
     }
   }

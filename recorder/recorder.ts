@@ -20,8 +20,9 @@ export class Recorder extends EventEmitter {
   }
   install() {
     const { options, watchers } = this;
-    console.log(watchers);
+    const report = (data: any) => this.emit('report', data);
     for (const watcher of watchers) {
+      (watcher as any).on('report', report);
       (watcher as any).install(options);
     }
   }

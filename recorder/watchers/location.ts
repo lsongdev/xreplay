@@ -1,11 +1,5 @@
 
-import { LocationRecord, RecordType } from '../../types'
 import { Watcher } from '../watcher'
-
-enum MethodType {
-  'add' = 'add',
-  'rm' = 'rm'
-}
 
 enum LocationTypes {
   'replaceState' = 'replaceState',
@@ -14,58 +8,39 @@ enum LocationTypes {
   'hashchange' = 'hashchange'
 }
 
-export class LocationWatcher extends Watcher<LocationRecord> {
-  protected init() {
-    this.context.history.pushState = this.kidnapLocation(LocationTypes.pushState)
-    this.context.history.replaceState = this.kidnapLocation(LocationTypes.replaceState)
-
-    const types = Object.values(LocationTypes)
-
-    types.forEach(type => this.toggleListener(MethodType.add, type, this.locationHandle))
-
-    this.uninstall(() => {
-      types.forEach(type => this.toggleListener(MethodType.rm, type, this.locationHandle))
-    })
-  }
-
-  private toggleListener(
-    methodType: keyof typeof MethodType,
-    type: string,
-    handle: EventListenerOrEventListenerObject
-  ) {
-    this.context[methodType === MethodType.add ? 'addEventListener' : 'removeEventListener'](type, handle)
-  }
-
-  private kidnapLocation(type: LocationTypes.pushState | LocationTypes.replaceState) {
-    const ctx = this.context
-    const original = ctx.history[type]
-
-    return function (this: any) {
-      const result = original.apply(this, arguments)
-      const e = new Event(type)
-      e.arguments = arguments
-      ctx.dispatchEvent(e)
-      return result
+export const createLocationMonitor = (context: any, fn: any) => {
+  const rewrite = (history: any, type: string) => {
+    const original = history[type];
+    return history[type] = function (this: any) {
+      const e = new Event(type);
+      original.apply(this, arguments);
+      context.dispatchEvent(e);
     }
+  };
+  const arr: any[] = [];
+  const bind = () => {
+    rewrite(context.history, 'pushState');
+    rewrite(context.history, 'replaceState');
+    const types = Object.values(LocationTypes);
+    types.forEach(type => {
+      context.addEventListener(type, fn);
+      arr.push(() => context.removeEventListener(type, fn));
+    });
+  };
+  return {
+    bind,
+    unbind: () => arr.map(fn => fn())
   }
+};
 
-  private locationHandle = (e: Event) => {
-    const contextNodeId = this.getContextNodeId(e)
-    const [, , path] = e.arguments || [, , this.context?.location?.pathname]
-    const { href, hash } = this.context.location
-    const title = document.title
-    this.emitData(RecordType.LOCATION, {
-      contextNodeId,
-      href,
-      hash,
-      path,
-      title
-    })
-  }
-
-  public emitOne = () => this.locationHandle(({ target: window } as unknown) as Event)
-
-  private getContextNodeId(e: Event) {
-    return this.getNodeId((e.target as Window).document.documentElement)!
+export class LocationWatcher extends Watcher {
+  install({ context }: any) {
+    const { bind, unbind } = createLocationMonitor(context, (e: Event) => {
+      const { title } = document;
+      const { href, pathname, hash } = context.location;
+      this.report('LOCATION', { title, href, path: pathname, hash });
+    });
+    this.registerUninstall(unbind);
+    return bind();
   }
 }

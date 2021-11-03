@@ -1,5 +1,4 @@
 
-import { Watcher } from '../watcher'
 
 enum eventTypes {
   'input' = 'input',
@@ -8,11 +7,35 @@ enum eventTypes {
   'blur' = 'blur'
 }
 
-const createHijacking = (context: any, handleEvent: any) => {
+type EventHandler = (el: HTMLInputElement, key: string, value: any) => void;
+
+export const createFormMonitor = (context: any, handleEvent: EventHandler) => {
   const eventListenerOptions = { once: false, passive: true, capture: true };
   function fn(this: Window, e: Event) {
-    const eventType = e.type;
-    handleEvent(e.target, eventType);
+    const { type: eventType } = e;
+    const target = e.target as HTMLInputElement;
+    let key = '', value;
+    switch (eventType) {
+      case eventTypes.focus:
+        key = 'focus';
+        break;
+      case eventTypes.blur:
+        key = 'blur';
+        break;
+      case eventTypes.input:
+      case eventTypes.change:
+        key = 'value';
+        const inputType = target.getAttribute('type') || 'text';
+        if (inputType === 'checkbox' || inputType === 'radio') {
+          if (eventType === 'input') return;
+          key = 'checked';
+        }
+        value = (target as any)[key];
+        break;
+    }
+    if(target.nodeType === Node.ELEMENT_NODE) {
+      handleEvent(target, key, value);
+    }
   };
   const arr: any[] = [];
   for (const type of Object.values(eventTypes)) {
@@ -43,16 +66,9 @@ const createHijacking = (context: any, handleEvent: any) => {
       ['checked', context.HTMLInputElement.prototype]
     ]).forEach((target, key) => hijacking(key, target));
   };
-  return bind();
+  return {
+    bind,
+    hijacking,
+    unbind: () => arr.map(fn => fn())
+  };
 };
-
-function hijackInputs(context: any) {
-  const hijacking = createHijacking(context, (el: HTMLElement, key: string, value: any) => {
-    console.log(el, key, value);
-  });
-}
-export class FormElementWatcher extends Watcher {
-  install({ context }: any) {
-    hijackInputs(context);
-  }
-}

@@ -1,160 +1,64 @@
 
-import { throttle, isExistingNode } from '../../utils'
-import { MouseRecord, RecordType, MouseEventType, MouseRecordData } from '../../types'
 import { Watcher } from '../watcher'
 import { finder } from '../finder';
 
-export class MouseWatcher extends Watcher<MouseRecord> {
-  scrolling: boolean
-  latestMove: { x: number; y: number; id?: number } | null
+// export const bindMove = (context: any, fn: any) => {
+//   const handle = throttle((e: MouseEvent) => {
+//     const { offsetX: x, offsetY: y } = e;
+//     fn({ x, y });
+//   }, 300, {
+//     trailing: true,
+//     leading: true
+//   });
+//   context.addEventListener('mousemove', handle);
+// };
 
-  protected init() {
-    this.mouseMove()
-    this.mouseClick()
-    this.detectScrolling()
-  }
+// export const bindClick = (context: any, fn: any) => {
+//   context.addEventListener('click', (e: PointerEvent) => {
+//     const { offsetX: x, offsetY: y, target } = e;
+//     fn({ x, y, target });
+//   });
+// };
 
-  private detectScrolling() {
-    let timer: number
-    const evt = () => {
-      this.scrolling = true
-      clearTimeout(timer)
-      timer = this.context.setTimeout(() => {
-        this.scrolling = false
+// export const createMouseMonitor = (context: any) => {
+//   return {
+//     bindMove: (fn: any) => bindMove(context, fn),
+//     bindClick: (fn: any) => bindClick(context, fn),
+//   };
+// };
 
-        if (this.latestMove) {
-          this.sendMoveData(this.latestMove)
-          this.latestMove = null
-        }
-      }, 500)
-    }
+type OptionType = {
+  context: Window,
+};
 
-    const eventNames = ['mousewheel', 'scroll']
-    eventNames.forEach(name => {
-      this.context.addEventListener(name, evt, true)
-      this.uninstall(() => {
-        this.context.removeEventListener(name, evt, true)
-      })
-    })
-  }
-
-  sendMoveData(position: { x: number; y: number; id?: number }) {
-    const { x, y, id } = position
-    this.emitData(RecordType.MOUSE, {
-      type: MouseEventType.MOVE,
-      id,
-      x,
-      y
-    })
-  }
-
-  private mouseMove() {
-    const evt = (e: MouseEvent) => {
-      const offsetPosition = this.getOffsetPosition(e, this.context)
-      if (this.scrolling) {
-        this.latestMove = offsetPosition as { x: number; y: number; id?: number }
-        return
+export class MouseWatcher extends Watcher {
+  install({ context }: OptionType) {
+    this.registerEvent({
+      context,
+      eventTypes: ['mousemove'],
+      type: 'throttle',
+      waitTime: 300,
+      listenerOptions: {},
+      optimizeOptions: {
+        trailing: true,
+        leading: true
+      },
+      handleFn: (e: MouseEvent) => {
+        const { offsetX: x, offsetY: y } = e;
+        this.report('MOUSE', { type: 'MOVE', x, y });
+      },
+    });
+    this.registerEvent({
+      context,
+      eventTypes: ['click'],
+      type: 'throttle',
+      waitTime: 300,
+      listenerOptions: {},
+      handleFn: (e) => {
+        const { offsetX: x, offsetY: y, target } = e;
+        const selector = finder(target);
+        this.report('MOUSE', { type: 'CLICK', x, y, selector });
       }
-
-      offsetPosition && this.sendMoveData(offsetPosition)
-    }
-    const name = 'mousemove'
-    const listenerHandle = throttle(evt, 300, {
-      trailing: true,
-      leading: true
-    })
-
-    this.context.addEventListener(name, listenerHandle)
-
-    this.uninstall(() => {
-      this.context.removeEventListener(name, listenerHandle)
-    })
-  }
-
-  private mouseClick() {
-    const evt = (e: MouseEvent) => {
-      const selector = finder(<HTMLElement>e.target);
-      const offsetPosition = this.getOffsetPosition(e, this.context)
-      if (offsetPosition) {
-        this.emitData(RecordType.MOUSE, {
-          type: MouseEventType.CLICK,
-          selector,
-          ...offsetPosition
-        })
-      }
-    }
-
-    const name = 'click'
-    const listenerHandle = throttle(evt, 250)
-    this.uninstall(() => {
-      this.context.removeEventListener(name, listenerHandle)
-    })
-    this.context.addEventListener(name, listenerHandle)
-  }
-
-  private getOffsetPosition(event: MouseEvent, context: Window) {
-    const { mode } = this.options as any;
-
-    const { view, target, x, y, offsetX, offsetY } = event
-
-    if (view === context) {
-      const doc = (<HTMLElement>target).ownerDocument!
-
-      function isInline(target: HTMLElement) {
-        return context.getComputedStyle(target).display === 'inline'
-      }
-
-      // https://stackoverflow.com/questions/8270612/get-element-moz-transformrotate-value-in-jquery
-      function getRotate(node: HTMLElement) {
-        if (!isExistingNode(node)) {
-          return 0
-        }
-        const computedStyle = context.getComputedStyle(node)
-        const matrix = computedStyle['transform']
-
-        let angle: number
-        if (matrix !== 'none') {
-          const values = matrix.split('(')[1].split(')')[0].split(',')
-          const a = Number(values[0])
-          const b = Number(values[1])
-          angle = Math.round(Math.atan2(b, a) * (180 / Math.PI))
-        } else {
-          angle = 0
-        }
-        return angle < 0 ? angle + 360 : angle
-      }
-
-      let node = target as HTMLElement
-      let id: number | undefined = undefined
-      if (isExistingNode(node)) {
-        while (isInline(node as HTMLElement)) {
-          node = node.parentElement!
-        }
-        id = this.getNodeId(node)
-      }
-
-      const deg = getRotate(node)
-      let position: Omit<MouseRecordData, 'type'>
-
-      if (deg || !id) {
-        return null
-      } else {
-        position = {
-          id,
-          x: offsetX,
-          y: offsetY
-        }
-      }
-
-      const frameElement = doc?.defaultView?.frameElement as HTMLElement
-      if (frameElement && mode === 'default') {
-        const rect = frameElement.getBoundingClientRect()
-        position.y += rect.top
-        position.x += rect.left
-      }
-
-      return position
-    }
-    return false
+    });
   }
 }
