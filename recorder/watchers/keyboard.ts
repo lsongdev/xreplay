@@ -10,7 +10,7 @@ export class KeyboardWatcher extends Watcher {
       waitTime: 100,
       optimizeOptions: {},
       handleFn: (e) => {
-        const { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, location, target } = e;
+        const { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, target } = e;
         this.report('KEYBOARD', { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, target });
       }
     });

@@ -20,6 +20,7 @@
   },
   "homepage": "https://github.com/song940/xreplay#readme",
   "dependencies": {
+    "@rollup/plugin-typescript": "^8.3.0",
     "brick.json": "^0.0.6",
     "diff": "^5.0.0",
     "is-mobile": "*",

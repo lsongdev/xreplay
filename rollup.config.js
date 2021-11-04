@@ -91,7 +91,7 @@ function createConfig(entryFile, output) {
     external,
     plugins: [
       tsPlugin,
-      // ...defaultPlugins,
+      ...defaultPlugins,
       ...nodePlugins,
       ...plugins,
     ],
@@ -104,9 +104,9 @@ function createConfig(entryFile, output) {
 
 export default [
   // recorder
-  // createConfig('./recorder/index.ts', { file: 'dist/xreplay-recorder.cjs.js', format: 'cjs' }),
+  createConfig('./recorder/index.ts', { file: 'dist/xreplay-recorder.cjs.js', format: 'cjs' }),
   createConfig('./recorder/index.ts', { file: 'dist/xreplay-recorder.esm.js', format: 'esm' }),
-  // createConfig('./recorder/index.ts', { file: 'dist/xreplay-recorder.global.js', format: 'iife', name }),
+  createConfig('./recorder/index.ts', { file: 'dist/xreplay-recorder.global.js', format: 'iife', name }),
   // player
   // createConfig('./player/index.ts', { file: 'dist/xreplay-player.cjs.js', format: 'cjs' }),
   // createConfig('./player/index.ts', { file: 'dist/xreplay-player.esm.js', format: 'esm' }),

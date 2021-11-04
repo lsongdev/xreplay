@@ -125,6 +125,36 @@ class Watcher extends EventEmitter {
     }
 }
 
+class DOMWatcher extends Watcher {
+    install({ context }) {
+        const observer = new MutationObserver((records) => {
+            for (const record of records) {
+                const { target, addedNodes, removedNodes, type, attributeName, oldValue } = record;
+                switch (type) {
+                    case 'attributes':
+                        console.log(type, { key: attributeName, node: target, oldValue });
+                        break;
+                    case 'characterData':
+                        console.log(type, target);
+                        break;
+                    case 'childList':
+                        console.log(type, addedNodes, removedNodes);
+                        break;
+                }
+            }
+        });
+        observer.observe(context.document.documentElement, {
+            attributeOldValue: true,
+            attributes: true,
+            characterData: true,
+            characterDataOldValue: true,
+            childList: true,
+            subtree: true
+        });
+        this.registerUninstall(() => observer.disconnect());
+    }
+}
+
 var Limit;
 (function (Limit) {
     Limit[Limit["All"] = 0] = "All";
@@ -558,7 +588,7 @@ class KeyboardWatcher extends Watcher {
             waitTime: 100,
             optimizeOptions: {},
             handleFn: (e) => {
-                const { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, location, target } = e;
+                const { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, target } = e;
                 this.report('KEYBOARD', { key, code, ctrlKey, shiftKey, altKey, metaKey, repeat, target });
             }
         });
@@ -657,10 +687,35 @@ class ScrollWatcher extends Watcher {
     }
 }
 
+const getWindowSize = (context) => {
+    const { innerWidth: width, innerHeight: height } = context;
+    return { width, height };
+};
+class WindowWatcher extends Watcher {
+    install({ context }) {
+        this.sendData(context);
+        this.registerEvent({
+            context,
+            eventTypes: ['resize'],
+            listenerOptions: { capture: true },
+            type: 'throttle',
+            optimizeOptions: { trailing: true },
+            waitTime: 500,
+            handleFn: () => this.sendData(context)
+        });
+    }
+    sendData(context) {
+        const size = getWindowSize(context);
+        this.report('WINDOW', size);
+    }
+}
+
 const allWatchers = [
+    DOMWatcher,
     FormWatcher,
     MouseWatcher,
     ScrollWatcher,
+    WindowWatcher,
     LocationWatcher,
     KeyboardWatcher,
 ];
